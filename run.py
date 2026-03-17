@@ -12,6 +12,7 @@ if __name__ == "__main__":
         "app.main:app",
         host=config.get("host", "127.0.0.1"),
         port=config.get("port", 8000),
-        reload=True,
+        reload=False,
+        workers=4,
         log_level=config.get("log_level", "info")
     )

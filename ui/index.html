@@ -42,6 +42,12 @@
             
             <label for="bootstrap-token">Bootstrap Token (Token A)</label>
             <input type="text" id="bootstrap-token" placeholder="Enter bootstrap token">
+
+            <label for="emsp-token-to-cpo">EMSP Token to CPO (TOKEN C)</label>
+            <input type="text" id="emsp-token-to-cpo" placeholder="Enter emsp token to cpo">
+
+            <label for="tenant-partner-id">Tenant Partner ID</label>
+            <input type="text" id="tenant-partner-id" placeholder="Enter tenant partner id">   
             
             <button onclick="saveConfig()">Update Config</button>
         </div>
@@ -53,12 +59,18 @@
                 <h3>Handshake</h3>
                 <button onclick="triggerAction('credentials')">1. Credentials Exchange</button>
             </div>
+
+            <div style="margin-bottom: 15px;">
+                <h3>Registration process with Auth</h3>
+                <button onclick="triggerAction('versions-auth')">2. Get Versions Auth</button>
+                <button onclick="triggerAction('endpoints')">3. Get Endpoints</button>
+            </div>
             
             <div style="margin-bottom: 15px;">
                 <h3>Discovery</h3>
-                <button onclick="triggerAction('versions')">2. Get Versions</button>
-                <button onclick="triggerAction('locations')">3. Get Locations</button>
-                <button onclick="triggerAction('tariffs')">4. Get Tariffs</button>
+                <button onclick="triggerAction('versions')">4. Get Versions</button>
+                <button onclick="triggerAction('locations')">5. Get Locations</button>
+                <button onclick="triggerAction('tariffs')">6. Get Tariffs</button>
             </div>
             
             <div>
@@ -94,6 +106,8 @@
                 const data = await res.json();
                 document.getElementById('cpo-url').value = data.cpo_url || '';
                 document.getElementById('bootstrap-token').value = data.bootstrap_token || '';
+                document.getElementById('emsp-token-to-cpo').value = data.emsp_token_to_cpo || '';
+                document.getElementById('tenant-partner-id').value = data.tenant_partner_id || '';
                 document.getElementById('connection-status').textContent = "Connected to EMSP Backend";
                 document.getElementById('connection-status').style.color = "green";
             } catch (e) {
@@ -106,12 +120,14 @@
         async function saveConfig() {
             const cpo_url = document.getElementById('cpo-url').value;
             const bootstrap_token = document.getElementById('bootstrap-token').value;
+            const emsp_token_to_cpo = document.getElementById('emsp-token-to-cpo').value;
+            const tenant_partner_id = document.getElementById('tenant-partner-id').value;
             
             try {
                 const res = await fetch(`${API_BASE}/config`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({cpo_url, bootstrap_token})
+                    body: JSON.stringify({cpo_url, bootstrap_token, tenant_partner_id, emsp_token_to_cpo})
                 });
                 const data = await res.json();
                 log("Config Updated: " + JSON.stringify(data));

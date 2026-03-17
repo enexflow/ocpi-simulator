@@ -10,18 +10,23 @@ logger = get_logger("ui-api")
 class ConfigUpdate(BaseModel):
     cpo_url: str
     bootstrap_token: str
+    tenant_partner_id: str
+    emsp_token_to_cpo: str
 
 @router.get("/config")
 async def get_config():
     return {
         "cpo_url": state.cpo_url,
-        "bootstrap_token": state.bootstrap_token
+        "bootstrap_token": state.bootstrap_token,
+        "tenant_partner_id": state.tenant_partner_id
     }
 
 @router.post("/config")
 async def update_config(cfg: ConfigUpdate):
     state.cpo_url = cfg.cpo_url
     state.bootstrap_token = cfg.bootstrap_token
+    state.tenant_partner_id = cfg.tenant_partner_id
+    state.emsp_token_to_cpo = cfg.emsp_token_to_cpo
     logger.info(f"UI updated config: CPO_URL={state.cpo_url}", module="ui")
     return {"status": "ok", "message": "Configuration updated"}
 
@@ -38,6 +43,18 @@ async def action_credentials():
 async def action_versions():
     logger.info("UI triggers Get Versions", module="ui")
     data = cpo_client.get_versions()
+    return {"status": "ok", "data": data}
+
+@router.post("/actions/versions-auth")
+async def action_versions_auth():
+    logger.info("UI triggers Get Versions Auth", module="ui")
+    data = cpo_client.get_versions_auth()
+    return {"status": "ok", "data": data}
+
+@router.post("/actions/endpoints")
+async def action_endpoints():
+    logger.info("UI triggers Get Endpoints", module="ui")
+    data = cpo_client.get_endpoints()
     return {"status": "ok", "data": data}
 
 @router.post("/actions/locations")

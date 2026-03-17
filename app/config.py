@@ -52,6 +52,10 @@ class Config:
     @property
     def initial_cpo_token_to_emsp(self):
         return self._config.get("cpo_token_to_emsp")
+    
+    @property
+    def tenant_partner_id(self):
+        return self._config.get("tenant_partner_id")
 
 # Global instance
 config = Config()

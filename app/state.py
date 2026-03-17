@@ -25,7 +25,7 @@ class State:
         # Dynamic Config from UI
         self.cpo_url = config.cpo_url
         self.bootstrap_token = config.bootstrap_token
-
+        self.tenant_partner_id = config.tenant_partner_id
     def set_tokens(self, cpo_token: str, emsp_token: str):
         self.cpo_token_to_emsp = cpo_token
         self.emsp_token_to_cpo = emsp_token

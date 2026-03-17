@@ -4,8 +4,12 @@ from app.state import state
 from app.validators.validate import validate_payload
 from app.log_utils import get_logger
 from typing import Optional, Dict, Any
+import base64
 
 logger = get_logger("cpo-client")
+
+def encode_base64(string: str):
+    return base64.b64encode(string.encode('utf-8')).decode('utf-8')
 
 class CPOClient:
     def __init__(self):
@@ -14,12 +18,20 @@ class CPOClient:
 
     @property
     def headers(self):
+        print(f"EMSP TOKEN TO CPO: {state.emsp_token_to_cpo}")
         token = state.emsp_token_to_cpo
+        encoded_token = encode_base64(token)
         if not token:
             logger.warning("No EMSP Token found", direction="EMSP->CPO", module="client")
         return {
-            "Authorization": f"Token {token}",
-            "Content-Type": "application/json"
+            "Authorization": f"Token {encoded_token}",
+            "Content-Type": "application/json",
+            "X-Request-ID": "1234567890",
+            "X-Correlation-ID": "1234567890",
+            "OCPI-from-country-code": "US",
+            "OCPI-from-party-id": "TMS",
+            "OCPI-to-country-code": "US",
+            "OCPI-to-party-id": "TMS",
         }
 
     def _validate_response(self, response: requests.Response, module: str):
@@ -44,7 +56,9 @@ class CPOClient:
         return True, "OK"
 
     def get_versions(self):
-        url = f"{state.cpo_url}/ocpi/versions"
+        url = f"{state.cpo_url}/ocpi/versions/{state.tenant_partner_id}"
+        logger.info(f"I AM IN GET VERSIONS CLIENT", direction="EMSP->CPO", module="versions")
+        logger.info(f"GET {url}", direction="EMSP->CPO", module="versions")
         try:
             logger.info(f"GET {url}", direction="EMSP->CPO", module="versions")
             res = requests.get(url, headers=self.headers, timeout=10)
@@ -54,10 +68,48 @@ class CPOClient:
             logger.error(f"Failed to get versions", direction="EMSP->CPO", module="versions", context=str(e))
             return None
 
+    def get_versions_auth(self):
+        url = f"{state.cpo_url}/ocpi/versions/{state.tenant_partner_id}"
+        logger.info(f"I AM IN GET VERSIONS AUTH CLIENT", direction="EMSP->CPO", module="versions")
+        logger.info(f"GET {url}", direction="EMSP->CPO", module="versions-auth")
+        try:
+            auth_headers = {
+                **self.headers,
+                "Authorization": f"Token {encode_base64(state.bootstrap_token)}",
+                "Content-Type": "application/json",
+                "X-Request-ID": "1234567890",
+                "X-Correlation-ID": "1234567890"
+            }
+            res = requests.get(url, headers=auth_headers, timeout=10)
+            logger.info(f"Response {res.status_code}", direction="CPO->EMSP", module="versions")
+            return res.json()
+        except Exception as e:
+            logger.error(f"Failed to get versions auth", direction="EMSP->CPO", module="versions", context=str(e))
+            return None
+    
+    def get_endpoints(self):
+        url = f"{state.cpo_url}/ocpi/versions/{state.tenant_partner_id}/2.2.1"
+        logger.info(f"I AM IN GET ENDPOINTS CLIENT", direction="EMSP->CPO", module="endpoints")
+        logger.info(f"GET {url}", direction="EMSP->CPO", module="endpoints")
+        try:
+            auth_headers = {
+                **self.headers,
+                "Authorization": f"Token {encode_base64(state.bootstrap_token)}",
+                "Content-Type": "application/json",
+                "X-Request-ID": "1234567890",
+                "X-Correlation-ID": "1234567890"
+            }
+            res = requests.get(url, headers=auth_headers, timeout=10)
+            logger.info(f"Response {res.status_code}", direction="CPO->EMSP", module="versions")
+            return res.json()
+        except Exception as e:
+            logger.error(f"Failed to get endpoints", direction="EMSP->CPO", module="endpoints", context=str(e))
+            return None
+
     def post_credentials(self):
-        url = f"{state.cpo_url}/ocpi/cpo/2.2.1/credentials"
+        url = f"{state.cpo_url}/ocpi/2.2.1/credentials"
         
-        base_url = f"http://{config._config.get('host', '127.0.0.1')}:{config._config.get('port', 8000)}/ocpi/emsp/2.2.1"
+        base_url = f"http://{config._config.get('host_url', '127.0.0.1')}:{config._config.get('port', 8000)}/ocpi/versions"
         payload = {
             "token": state.cpo_token_to_emsp, # The token they should use
             "url": base_url,
@@ -71,13 +123,42 @@ class CPOClient:
         
         # AUTH FIX: Use bootstrap token for handshake, NOT the standard headers
         bootstrap_headers = {
-            "Authorization": f"Token {state.bootstrap_token}",
-            "Content-Type": "application/json"
+            "Authorization": f"Token {encode_base64(state.bootstrap_token)}",
+            "Content-Type": "application/json",
+            "X-Request-ID": "1234567890",
+            "X-Correlation-ID": "1234567890"
         }
+
+        logger.info(f"Bootstrap Headers: {bootstrap_headers}", direction="EMSP->CPO", module="credentials")
+        logger.info(f"BASE URL: {base_url}", direction="EMSP->CPO", module="credentials")
+
+                # extra debug logs
+        logger.info(f"POST /credentials URL: {url}", direction="EMSP->CPO", module="credentials")
+        logger.info(f"POST /credentials headers: {bootstrap_headers}", direction="EMSP->CPO", module="credentials")
+        logger.info(f"POST /credentials payload: {payload}", direction="EMSP->CPO", module="credentials")
         
+        # try:
+        #     logger.info(f"POST Credentials", direction="EMSP->CPO", module="credentials", context=f"TokenForCPO={state.cpo_token_to_emsp} | Auth=Bootstrap")
+        #     res = requests.post(url, json=payload, headers=bootstrap_headers, timeout=30)
+            
+        #     if res.status_code == 200:
+        #         data = res.json()
+        #         if data.get("status_code") == 1000 and "data" in data:
+        #             cred_data = data["data"]
+        #             new_token = cred_data.get("token")
+        #             if new_token:
+        #                 state.emsp_token_to_cpo = new_token
+        #                 logger.info(f"Handshake successful", direction="CPO->EMSP", module="credentials", context=f"NewToken={new_token[:4]}***")
+        #             return True
+        #     logger.error(f"Credentials exchange failed", direction="CPO->EMSP", module="credentials", context=f"Status={res.status_code} | Body={res.text}")
+        #     return False
+        # except Exception as e:
+        #     logger.error(f"Credentials exchange failed", direction="EMSP->CPO", module="credentials", context=str(e))
+        #     return False
+
         try:
             logger.info(f"POST Credentials", direction="EMSP->CPO", module="credentials", context=f"TokenForCPO={state.cpo_token_to_emsp} | Auth=Bootstrap")
-            res = requests.post(url, json=payload, headers=bootstrap_headers, timeout=10)
+            res = requests.post(url, json=payload, headers=bootstrap_headers, timeout=60)
             
             if res.status_code == 200:
                 data = res.json()
@@ -95,7 +176,7 @@ class CPOClient:
             return False
 
     def get_locations(self):
-        url = f"{state.cpo_url}/ocpi/cpo/2.2.1/locations"
+        url = f"{state.cpo_url}/ocpi/2.2.1/locations"
         try:
             logger.info(f"GET Locations", direction="EMSP->CPO", module="locations")
             res = requests.get(url, headers=self.headers, timeout=10)
@@ -111,7 +192,7 @@ class CPOClient:
             return None
 
     def start_session(self, location_id: str, evse_uid: str, token_uid: str):
-        url = f"{state.cpo_url}/ocpi/cpo/2.2.1/sessions"
+        url = f"{state.cpo_url}/ocpi/2.2.1/sessions"
         payload = {
             "location_id": location_id,
             "evse_uid": evse_uid,
@@ -129,7 +210,7 @@ class CPOClient:
 
     def stop_session(self, session_id: str):
         # PATCH /sessions/{id}
-        url = f"{state.cpo_url}/ocpi/cpo/2.2.1/sessions/{session_id}"
+        url = f"{state.cpo_url}/ocpi/2.2.1/sessions/{session_id}"
         payload = {"status": "COMPLETED"} # Example
         try:
              res = requests.patch(url, json=payload, headers=self.headers, timeout=10)
@@ -140,7 +221,7 @@ class CPOClient:
             return None
 
     def get_tariffs(self):
-        url = f"{state.cpo_url}/ocpi/cpo/2.2.1/tariffs"
+        url = f"{state.cpo_url}/ocpi/2.2.1/tariffs"
         try:
             logger.info(f"GET {url}", direction="EMSP->CPO", module="tariffs")
             res = requests.get(url, headers=self.headers, timeout=10)
