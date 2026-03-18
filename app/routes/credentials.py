@@ -105,8 +105,8 @@ async def post_credentials(
     base_url = f"http://{config._config.get('host_url', '127.0.0.1')}:{config._config.get('port', 8000)}"
 
     response_data = {
-        "token": token_c,           # ← fresh UUID, never None
-        "url": f"{base_url}/ocpi/versions",  # ← point to versions, not 2.2.1
+        "token": token_c,
+        "url": f"{base_url}/ocpi/versions",
         "roles": [
             {
                 "role": "EMSP",
@@ -116,7 +116,6 @@ async def post_credentials(
             }
         ],
     }
-    logger.info(f"FULL RESPONSE BEING RETURNED: {response_data}", direction="CPO->EMSP", module="credentials")
     return {
         "status_code": 1000,
         "status_message": "Success",

@@ -14,10 +14,7 @@ logger = get_logger("versions")
 router = APIRouter()
 
 @router.get("/ocpi/versions")
-async def get_versions(request: Request):  # ← add Request parameter
-    logger.info(f"I AM IN GET VERSIONS ROUTE", direction="CPO->EMSP", module="versions")
-    logger.info(f"GET /ocpi/versions called from {request.client.host}")
-    logger.info(f"Headers: {dict(request.headers)}")
+async def get_versions(request: Request):
     base = f"http://{config._config.get('host_url', '127.0.0.1')}:{config._config.get('port', 8000)}"
     return {
         "status_code": 1000,

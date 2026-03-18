@@ -2,7 +2,8 @@
 # Copy this file to config.yaml and update the values
 
 # Server Settings
-host: "127.0.0.1"
+host: "0.0.0.0" # our ip address
+host_url : "0.0.0.0" # this is the ip address of ocpi container
 port: 8000
 log_level: "info"
 environment: "local" # options: local, staging

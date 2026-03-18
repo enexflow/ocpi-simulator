@@ -31,7 +31,7 @@ class CPOClient:
             "OCPI-from-country-code": "US",
             "OCPI-from-party-id": "TMS",
             "OCPI-to-country-code": "US",
-            "OCPI-to-party-id": "TMS",
+            "OCPI-to-party-id": "OXD",
         }
 
     def _validate_response(self, response: requests.Response, module: str):
@@ -57,7 +57,6 @@ class CPOClient:
 
     def get_versions(self):
         url = f"{state.cpo_url}/ocpi/versions/{state.tenant_partner_id}"
-        logger.info(f"I AM IN GET VERSIONS CLIENT", direction="EMSP->CPO", module="versions")
         logger.info(f"GET {url}", direction="EMSP->CPO", module="versions")
         try:
             logger.info(f"GET {url}", direction="EMSP->CPO", module="versions")
@@ -70,7 +69,6 @@ class CPOClient:
 
     def get_versions_auth(self):
         url = f"{state.cpo_url}/ocpi/versions/{state.tenant_partner_id}"
-        logger.info(f"I AM IN GET VERSIONS AUTH CLIENT", direction="EMSP->CPO", module="versions")
         logger.info(f"GET {url}", direction="EMSP->CPO", module="versions-auth")
         try:
             auth_headers = {
@@ -89,7 +87,6 @@ class CPOClient:
     
     def get_endpoints(self):
         url = f"{state.cpo_url}/ocpi/versions/{state.tenant_partner_id}/2.2.1"
-        logger.info(f"I AM IN GET ENDPOINTS CLIENT", direction="EMSP->CPO", module="endpoints")
         logger.info(f"GET {url}", direction="EMSP->CPO", module="endpoints")
         try:
             auth_headers = {
@@ -130,12 +127,6 @@ class CPOClient:
         }
 
         logger.info(f"Bootstrap Headers: {bootstrap_headers}", direction="EMSP->CPO", module="credentials")
-        logger.info(f"BASE URL: {base_url}", direction="EMSP->CPO", module="credentials")
-
-                # extra debug logs
-        logger.info(f"POST /credentials URL: {url}", direction="EMSP->CPO", module="credentials")
-        logger.info(f"POST /credentials headers: {bootstrap_headers}", direction="EMSP->CPO", module="credentials")
-        logger.info(f"POST /credentials payload: {payload}", direction="EMSP->CPO", module="credentials")
         
         # try:
         #     logger.info(f"POST Credentials", direction="EMSP->CPO", module="credentials", context=f"TokenForCPO={state.cpo_token_to_emsp} | Auth=Bootstrap")
